@@ -35,7 +35,7 @@ extension Transparency {
         else {
             throw TransparencyError.image
         }
-        return TransparencyConvertor.image(cgImage: cgImage)
+        return TransparencyConverter.image(cgImage: cgImage)
     }
 }
 

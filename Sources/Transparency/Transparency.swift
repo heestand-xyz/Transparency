@@ -27,12 +27,14 @@ public struct Transparency {
         case textureCache
         case sampler
         case image
+        case blur(Int)
     }
     
-    static func tryRender(transparencyImage: TransparencyImage,
-                          over transparencyBackgroundTexture: TransparencyTexture) throws -> MTLTexture {
+    static func tryMetalRender(transparencyImage: TransparencyImage,
+                               over backgroundTexture: MTLTexture) throws -> MTLTexture {
         
-        let finalTexture: MTLTexture = try Transparency.emptyTexture(size: transparencyBackgroundTexture.size)
+        let emptySize = CGSize(width: backgroundTexture.width, height: backgroundTexture.height)
+        let finalTexture: MTLTexture = try Transparency.emptyTexture(size: emptySize)
 
         guard let commandQueue = metalDevice.makeCommandQueue() else {
             throw TransparencyError.commandQueue
@@ -52,12 +54,9 @@ public struct Transparency {
         commandEncoder.setRenderPipelineState(pipeline)
 
         commandEncoder.setFragmentTexture(transparencyImage.transparencyTexture.texture, index: 0)
-        commandEncoder.setFragmentTexture(transparencyBackgroundTexture.texture, index: 1)
+        commandEncoder.setFragmentTexture(backgroundTexture, index: 1)
         if let mapTexture: MTLTexture = transparencyImage.transparencyMapTexture?.texture {
             commandEncoder.setFragmentTexture(mapTexture, index: 2)
-        }
-        if let blurTexture: MTLTexture = transparencyImage.transparencyBlurTexture?.texture {
-            commandEncoder.setFragmentTexture(blurTexture, index: 3)
         }
 
         commandEncoder.setFragmentSamplerState(sampler, index: 0)
@@ -73,9 +72,25 @@ public struct Transparency {
     }
     
     static func tryRender(transparencyImage: TransparencyImage,
+                          over transparencyBackgroundTexture: TransparencyTexture) throws -> MTLTexture {
+        
+        let finalBackgroundTexture: MTLTexture
+        if let transparencyBlurTexture: TransparencyTexture = transparencyImage.transparencyBlurTexture {
+            finalBackgroundTexture = try Self.blur(transparencyTexture: transparencyBackgroundTexture, with: transparencyBlurTexture)
+        } else {
+            finalBackgroundTexture = transparencyBackgroundTexture.texture
+        }
+        
+        let finalTexture: MTLTexture = try tryMetalRender(transparencyImage: transparencyImage, over: finalBackgroundTexture)
+        
+        return finalTexture
+        
+    }
+    
+    static func tryRender(transparencyImage: TransparencyImage,
                           over transparencyBackgroundTexture: TransparencyTexture) throws -> Image {
         let texture: MTLTexture = try tryRender(transparencyImage: transparencyImage, over: transparencyBackgroundTexture)
-        guard let image: Image = TransparencyConvertor.image(texture: texture, colorSpace: transparencyImage.colorSpace.cgColorSpace) else {
+        guard let image: Image = TransparencyConverter.image(texture: texture, colorSpace: transparencyImage.colorSpace.cgColorSpace) else {
             throw TransparencyError.textureToImage
         }
         return image

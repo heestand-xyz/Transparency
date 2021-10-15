@@ -37,4 +37,33 @@ public enum TransparencyBits: Int, Codable, CaseIterable {
         return nil
     }
     
+    init(image: Image) {
+        #if os(macOS)
+        guard let cgImage: CGImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            fatalError("Transparency: CGImage not found.")
+        }
+        #else
+        guard let cgImage: CGImage = image.cgImage else {
+            fatalError("Transparency: CGImage not found.")
+        }
+        #endif
+        var bits: Self!
+        switch cgImage.bitsPerComponent {
+        case 8:
+            bits = ._8
+        case 16:
+            bits = ._16
+        default:
+            fatalError("Transparency: Bits not found in image.")
+        }
+        self = bits
+    }
+    
+    init(texture: MTLTexture) {
+        guard let bits = Self.bits(for: texture.pixelFormat) else {
+            fatalError("Transparency: Bits not found in texture.")
+        }
+        self = bits
+    }
+    
 }

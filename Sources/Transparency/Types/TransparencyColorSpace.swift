@@ -34,7 +34,7 @@ public enum TransparencyColorSpace: CaseIterable {
         guard let cgColorSpace: CGColorSpace = cgImage.colorSpace else {
             fatalError("Transparency: CGColorSpace not found.")
         }
-        var colorSpace: Self?
+        var colorSpace: Self!
         for colorSpaceCase in Self.allCases {
             if colorSpaceCase.cgColorSpace == cgColorSpace {
                 colorSpace = colorSpaceCase
@@ -43,7 +43,7 @@ public enum TransparencyColorSpace: CaseIterable {
         if colorSpace == nil {
             fatalError("Transparency: Color Space not supported.")
         }
-        self = colorSpace!
+        self = colorSpace
     }
     
 }
