@@ -4,7 +4,7 @@
 
 import CoreGraphics
 
-enum TransparencyColorSpace: CaseIterable {
+public enum TransparencyColorSpace: CaseIterable {
     
     case linear
     case sRGB
@@ -41,7 +41,7 @@ enum TransparencyColorSpace: CaseIterable {
             }
         }
         if colorSpace == nil {
-            fatalError("Transparency: Color Space (\(cgColorSpace)) not supported.")
+            fatalError("Transparency: Color Space not supported.")
         }
         self = colorSpace!
     }

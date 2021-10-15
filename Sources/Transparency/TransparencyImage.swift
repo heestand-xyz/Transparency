@@ -10,9 +10,9 @@ import UIKit
 import MetalKit
 
 #if os(macOS)
-typealias Image = NSImage
+public typealias Image = NSImage
 #else
-typealias Image = UIImage
+public typealias Image = UIImage
 #endif
 
 /// Transparency Image
@@ -21,9 +21,17 @@ typealias Image = UIImage
 /// This image can represent a looking glass, or a window with distortions and blur.
 public struct TransparencyImage {
     
-    private let transparencyTexture: TransparencyTexture
-    private let transparencyMapTexture: TransparencyTexture?
-    private let transparencyBlurTexture: TransparencyTexture?
+    let transparencyTexture: TransparencyTexture
+    let transparencyMapTexture: TransparencyTexture?
+    let transparencyBlurTexture: TransparencyTexture?
+    
+    var colorSpace: TransparencyColorSpace {
+        transparencyTexture.colorSpace
+    }
+    
+    var size: CGSize {
+        transparencyTexture.size
+    }
     
     /// Transparency Image
     ///
@@ -32,7 +40,7 @@ public struct TransparencyImage {
     /// - Optional Named  **Blur** will blur the underlying background based on luminance. This mask image should be monochrome.
     ///
     /// To create a default **Map** create two gradients. One from black to red on the horizontal axis and one from black to green in the vertical axis and blend them with add or screen.
-    init(named name: String, map mapName: String? = nil, blur blurName: String? = nil) {
+    public init(named name: String, map mapName: String? = nil, blur blurName: String? = nil) {
         guard let image: Image = Image(named: name) else {
             fatalError("Transparency: Image not found.")
         }
@@ -60,7 +68,7 @@ public struct TransparencyImage {
     /// - Optional **Blur** will blur the underlying background based on luminance. This mask image should be monochrome.
     ///
     /// To create a default **Map** create two gradients. One from black to red on the horizontal axis and one from black to green in the vertical axis and blend them with add or screen.
-    init(image: Image, map: Image? = nil, blur: Image? = nil) {
+    public init(image: Image, map: Image? = nil, blur: Image? = nil) {
         transparencyTexture = TransparencyTexture(image: image)
         transparencyMapTexture = map != nil ? TransparencyTexture(image: map!) : nil
         transparencyBlurTexture = blur != nil ? TransparencyTexture(image: blur!) : nil
@@ -73,7 +81,7 @@ public struct TransparencyImage {
     /// - Optional **Blur** will blur the underlying background based on luminance. This mask image should be monochrome.
     ///
     /// To create a default **Map** create two gradients. One from black to red on the horizontal axis and one from black to green in the vertical axis and blend them with add or screen.
-    init(texture: MTLTexture, map: MTLTexture? = nil, blur: MTLTexture? = nil, colorSpace: TransparencyColorSpace = .linear) {
+    public init(texture: MTLTexture, map: MTLTexture? = nil, blur: MTLTexture? = nil, colorSpace: TransparencyColorSpace = .linear) {
         transparencyTexture = TransparencyTexture(texture: texture, colorSpace: colorSpace)
         transparencyMapTexture = map != nil ? TransparencyTexture(texture: map!, colorSpace: colorSpace) : nil
         transparencyBlurTexture = blur != nil ? TransparencyTexture(texture: blur!, colorSpace: colorSpace) : nil

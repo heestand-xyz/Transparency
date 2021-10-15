@@ -3,14 +3,18 @@
 //
 
 import Foundation
-import Metal
+import CoreGraphics
+import MetalKit
+#if os(macOS)
+import AppKit
+#endif
 
 struct TransparencyTexture {
     
-    private var originalImage: Image?
-    private var originalTexture: MTLTexture?
+    var originalImage: Image?
+    var originalTexture: MTLTexture?
     
-    private let colorSpace: TransparencyColorSpace
+    let colorSpace: TransparencyColorSpace
     
     var image: Image {
         if let image: Image = originalImage {
@@ -35,6 +39,25 @@ struct TransparencyTexture {
                 print("Transparency: Image to texture conversion error:", error)
                 fatalError("Transparency: Image to texture conversion failed.")
             }
+        } else {
+            fatalError("Transparency: Texture not found.")
+        }
+    }
+    
+    var size: CGSize {
+        if let texture: MTLTexture = originalTexture {
+            return CGSize(width: texture.width, height: texture.height)
+        } else if let image: Image = originalImage {
+            #if os(macOS)
+            guard let imageRep: NSImageRep = image.representations.first else {
+                fatalError("Transparency: Image representation not found.")
+            }
+            return CGSize(width: imageRep.pixelsWide,
+                          height: imageRep.pixelsHigh)
+            #else
+            return CGSize(width: image.size.width * image.scale,
+                          height: image.size.height * image.scale)
+            #endif
         } else {
             fatalError("Transparency: Texture not found.")
         }
