@@ -14,9 +14,9 @@ import MetalKit
 
 extension Transparency {
     
-    static func emptyTexture(size: CGSize, metalDevice: MTLDevice = Transparency.metalDevice) throws -> MTLTexture {
-        let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: Int(size.width), height: Int(size.height), mipmapped: true)
-        descriptor.usage = MTLTextureUsage(rawValue: MTLTextureUsage.renderTarget.rawValue | MTLTextureUsage.shaderRead.rawValue)
+    static func emptyTexture(size: CGSize, metalDevice: MTLDevice = Transparency.metalDevice, bits: TransparencyBits) throws -> MTLTexture {
+        let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: bits.pixelFormat, width: Int(size.width), height: Int(size.height), mipmapped: true)
+        descriptor.usage = MTLTextureUsage(rawValue: MTLTextureUsage.renderTarget.rawValue | MTLTextureUsage.shaderRead.rawValue | MTLTextureUsage.shaderWrite.rawValue)
         guard let texture = metalDevice.makeTexture(descriptor: descriptor) else {
             throw TransparencyError.emptyTexture
         }
@@ -24,30 +24,15 @@ extension Transparency {
     }
 }
 
-// MARK: - Image
-
-extension Transparency {
-    
-    static func image(texture: MTLTexture) throws -> Image {
-        guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
-              let ciImage: CIImage = CIImage(mtlTexture: texture, options: [.colorSpace: colorSpace]),
-              let cgImage: CGImage = CIContext(options: nil).createCGImage(ciImage, from: ciImage.extent, format: .RGBA8, colorSpace: colorSpace)
-        else {
-            throw TransparencyError.image
-        }
-        return TransparencyConverter.image(cgImage: cgImage)
-    }
-}
-
 // MARK: - Pipeline
 
 extension Transparency {
     
-    static func pipeline(metalDevice: MTLDevice = Transparency.metalDevice) throws -> MTLRenderPipelineState {
+    static func pipeline(metalDevice: MTLDevice = Transparency.metalDevice, pixelFormat: MTLPixelFormat, shaderName: String) throws -> MTLRenderPipelineState {
         let pipelineStateDescriptor = MTLRenderPipelineDescriptor()
         pipelineStateDescriptor.vertexFunction = try shader(name: "vertexQuad")
-        pipelineStateDescriptor.fragmentFunction = try shader(name: "imageBlending")
-        pipelineStateDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+        pipelineStateDescriptor.fragmentFunction = try shader(name: shaderName)
+        pipelineStateDescriptor.colorAttachments[0].pixelFormat = pixelFormat
         pipelineStateDescriptor.colorAttachments[0].isBlendingEnabled = true
         pipelineStateDescriptor.colorAttachments[0].destinationRGBBlendFactor = .blendAlpha
         return try metalDevice.makeRenderPipelineState(descriptor: pipelineStateDescriptor)
@@ -121,7 +106,7 @@ extension Transparency {
 extension Transparency {
     
     static func shader(name: String, metalDevice: MTLDevice = Transparency.metalDevice) throws -> MTLFunction {
-        let metalLibrary: MTLLibrary = try metalDevice.makeDefaultLibrary(bundle: Bundle.main)
+        let metalLibrary: MTLLibrary = try metalDevice.makeDefaultLibrary(bundle: Bundle.module)
         guard let shader = metalLibrary.makeFunction(name: name) else {
             throw TransparencyError.shaderFunction
         }

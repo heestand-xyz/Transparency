@@ -54,10 +54,9 @@ extension TransparencyConverter {
         #endif
     }
     
-    public static func image(ciImage: CIImage, bits: TransparencyBits) -> Image? {
+    public static func image(ciImage: CIImage, bits: TransparencyBits, colorSpace: TransparencyColorSpace) -> Image? {
         #if os(macOS)
-        guard let colorSpace = ciImage.colorSpace else { return nil }
-        guard let cgImage = Self.cgImage(ciImage, at: ciImage.extent.size, colorSpace: colorSpace, bits: bits) else { return nil }
+        guard let cgImage = Self.cgImage(ciImage: ciImage, at: ciImage.extent.size, colorSpace: colorSpace.cgColorSpace, bits: bits) else { return nil }
         return NSImage(cgImage: cgImage, size: ciImage.extent.size)
         #else
         return UIImage(ciImage: ciImage)

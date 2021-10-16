@@ -22,8 +22,8 @@ public typealias Image = UIImage
 public struct TransparencyImage {
     
     let transparencyTexture: TransparencyTexture
-    let transparencyMapTexture: TransparencyTexture?
-    let transparencyBlurTexture: TransparencyTexture?
+    var transparencyMapTexture: TransparencyTexture?
+    var transparencyBlurTexture: TransparencyTexture?
     
     var colorSpace: TransparencyColorSpace {
         transparencyTexture.colorSpace
@@ -31,6 +31,10 @@ public struct TransparencyImage {
     
     var size: CGSize {
         transparencyTexture.size
+    }
+    
+    var bits: TransparencyBits {
+        transparencyTexture.bits
     }
     
     /// Transparency Image
@@ -70,8 +74,22 @@ public struct TransparencyImage {
     /// To create a default **Map** create two gradients. One from black to red on the horizontal axis and one from black to green in the vertical axis and blend them with add or screen.
     public init(image: Image, map: Image? = nil, blur: Image? = nil) {
         transparencyTexture = TransparencyTexture(image: image)
-        transparencyMapTexture = map != nil ? TransparencyTexture(image: map!) : nil
-        transparencyBlurTexture = blur != nil ? TransparencyTexture(image: blur!) : nil
+        if let map: Image = map {
+//            guard let linearMap: Image = TransparencyColorSpace.convert(image: map, to: .linear) else {
+//                fatalError("Transparency: Color space conversion failed.")
+//            }
+            transparencyMapTexture = TransparencyTexture(image: map)
+//            do {
+//                let linearMap: Image = try TransparencyColorSpace.convert(image: map, to: .linear)
+//                transparencyMapTexture = TransparencyTexture(texture: linearMap, colorSpace: .linear)
+//            } catch {
+//                print("Transparency: Color space conversion failed with error:", error)
+//                fatalError("Transparency: Color space conversion failed.")
+//            }
+        }
+        if let blur: Image = blur {
+            transparencyBlurTexture = TransparencyTexture(image: blur)
+        }
     }
     
     /// Transparency Image
@@ -83,7 +101,29 @@ public struct TransparencyImage {
     /// To create a default **Map** create two gradients. One from black to red on the horizontal axis and one from black to green in the vertical axis and blend them with add or screen.
     public init(texture: MTLTexture, map: MTLTexture? = nil, blur: MTLTexture? = nil, colorSpace: TransparencyColorSpace = .linear) {
         transparencyTexture = TransparencyTexture(texture: texture, colorSpace: colorSpace)
-        transparencyMapTexture = map != nil ? TransparencyTexture(texture: map!, colorSpace: colorSpace) : nil
-        transparencyBlurTexture = blur != nil ? TransparencyTexture(texture: blur!, colorSpace: colorSpace) : nil
+        if let map: MTLTexture = map {
+            transparencyMapTexture = TransparencyTexture(texture: map, colorSpace: colorSpace)
+        }
+        if let blur: MTLTexture = blur {
+            transparencyBlurTexture = TransparencyTexture(texture: blur, colorSpace: colorSpace)
+        }
+    }
+}
+
+extension TransparencyImage {
+    
+    public func layer(over backgroundName: String) -> Image {
+        guard let background: Image = Image(named: backgroundName) else {
+            fatalError("Transparency: Image not found.")
+        }
+        return layer(over: background)
+    }
+    
+    public func layer(over background: Image) -> Image {
+        Transparency.render(transparencyImage: self, over: background)
+    }
+    
+    public func layer(over background: MTLTexture) -> MTLTexture {
+        Transparency.render(transparencyImage: self, over: background, colorSpace: colorSpace)
     }
 }

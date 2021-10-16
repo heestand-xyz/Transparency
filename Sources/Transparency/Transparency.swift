@@ -34,7 +34,7 @@ public struct Transparency {
                                over backgroundTexture: MTLTexture) throws -> MTLTexture {
         
         let emptySize = CGSize(width: backgroundTexture.width, height: backgroundTexture.height)
-        let finalTexture: MTLTexture = try Transparency.emptyTexture(size: emptySize)
+        let finalTexture: MTLTexture = try Transparency.emptyTexture(size: emptySize, bits: transparencyImage.bits)
 
         guard let commandQueue = metalDevice.makeCommandQueue() else {
             throw TransparencyError.commandQueue
@@ -44,8 +44,10 @@ public struct Transparency {
         }
 
         let commandEncoder: MTLRenderCommandEncoder = try commandEncoder(texture: finalTexture, commandBuffer: commandBuffer)
-
-        let pipeline: MTLRenderPipelineState = try pipeline()
+        
+        let hasMap: Bool = transparencyImage.transparencyMapTexture != nil
+        let pipeline: MTLRenderPipelineState = try pipeline(pixelFormat: transparencyImage.bits.pixelFormat,
+                                                            shaderName: hasMap ? "transparencyMap" : "transparency")
 
         let sampler: MTLSamplerState = try sampler()
 
@@ -90,7 +92,7 @@ public struct Transparency {
     static func tryRender(transparencyImage: TransparencyImage,
                           over transparencyBackgroundTexture: TransparencyTexture) throws -> Image {
         let texture: MTLTexture = try tryRender(transparencyImage: transparencyImage, over: transparencyBackgroundTexture)
-        guard let image: Image = TransparencyConverter.image(texture: texture, colorSpace: transparencyImage.colorSpace.cgColorSpace) else {
+        guard let image: Image = TransparencyConverter.image(texture: texture, colorSpace: TransparencyColorSpace.linear.cgColorSpace) else {
             throw TransparencyError.textureToImage
         }
         return image
@@ -110,7 +112,7 @@ public struct Transparency {
     }
     
     public static func render(transparencyImage: TransparencyImage,
-                              over backgroundImage: Image) throws -> Image {
+                              over backgroundImage: Image) -> Image {
         do {
             let transparencyTexture = TransparencyTexture(image: backgroundImage)
             return try tryRender(transparencyImage: transparencyImage, over: transparencyTexture)
@@ -122,7 +124,7 @@ public struct Transparency {
     
     public static func render(transparencyImage: TransparencyImage,
                               over backgroundTexture: MTLTexture,
-                              colorSpace: TransparencyColorSpace) throws -> MTLTexture {
+                              colorSpace: TransparencyColorSpace) -> MTLTexture {
         do {
             let transparencyTexture = TransparencyTexture(texture: backgroundTexture, colorSpace: colorSpace)
             return try tryRender(transparencyImage: transparencyImage, over: transparencyTexture)

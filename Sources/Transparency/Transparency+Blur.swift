@@ -37,7 +37,7 @@ extension Transparency {
         }
         
         if ciBlurImage.extent.size != ciImage.extent.size {
-            guard let blurImage = TransparencyConverter.image(ciImage: ciBlurImage, bits: transparencyBlurTexture.bits) else {
+            guard let blurImage = TransparencyConverter.image(ciImage: ciBlurImage, bits: transparencyBlurTexture.bits, colorSpace: transparencyBlurTexture.colorSpace) else {
                 throw TransparencyError.blur(2)
             }
             let stretchedBlurImage = Self.resize(blurImage, to: ciImage.extent.size)

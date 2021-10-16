@@ -58,16 +58,7 @@ struct TransparencyTexture {
         if let texture: MTLTexture = originalTexture {
             return CGSize(width: texture.width, height: texture.height)
         } else if let image: Image = originalImage {
-            #if os(macOS)
-            guard let imageRep: NSImageRep = image.representations.first else {
-                fatalError("Transparency: Image representation not found.")
-            }
-            return CGSize(width: imageRep.pixelsWide,
-                          height: imageRep.pixelsHigh)
-            #else
-            return CGSize(width: image.size.width * image.scale,
-                          height: image.size.height * image.scale)
-            #endif
+            return image.pixelSize
         } else {
             fatalError("Transparency: Texture not found.")
         }
